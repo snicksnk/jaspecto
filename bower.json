@@ -1,0 +1,20 @@
+{
+  "name": "jaspecto",
+  "version": "0.0.1",
+  "authors": [
+    "snicksnk <snicksnk@gmail.com>"
+  ],
+  "description": "javascript aop library",
+  "main": "jaspecto.js",
+  "keywords": [
+    "aop"
+  ],
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ]
+}
