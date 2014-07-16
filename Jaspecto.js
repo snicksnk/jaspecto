@@ -1,16 +1,14 @@
 var Jaspecto = function () {
     "use strict";
-    var wrap = function (subject) {
+    var Wrap = function (subject) {
         subject.__JASPECTO__ = new Introducer(subject);
         return subject;
     };
 
-    var jas = function (subject) {
-
+    var Jas = function (subject) {
         if (!subject.hasOwnProperty('__JASPECTO__')){
-            wrap(subject);
+            Wrap(subject);
         }
-
         return subject.__JASPECTO__;
     }
 
@@ -20,9 +18,8 @@ var Jaspecto = function () {
         this._originalMethods = {};
     };
 
-    Introducer.prototype.addToStack = function(methodName, stack, aspectName, aspectCallback) {
-
-        if (typeof this._subject[methodName] !== "function") {
+    Introducer.prototype.preprocessMethod = function(methodName, stack, aspectName){
+		if (typeof this._subject[methodName] !== "function") {
             throw new Error('Object has no method "' + methodName + '"');
         }
 
@@ -33,8 +30,35 @@ var Jaspecto = function () {
         if (typeof this._pointcut[methodName][stack] === 'undefined') {
             this._pointcut[methodName][stack] = [];
         }
-        this._pointcut[methodName][stack].push({'name':aspectName,'callback':aspectCallback});
+
     }
+
+    Introducer.prototype.addToStack = function(methodName, stack, aspectName, aspectCallback) {
+        this.preprocessMethod(methodName, stack, aspectName);
+        this._pointcut[methodName][stack].push({'name':aspectName,'callback':aspectCallback});
+    }	
+
+    Introducer.prototype.removeFromStack = function(methodName, stack, aspectName) {
+    	this.preprocessMethod(methodName, stack, aspectName);
+        var stack = this._pointcut[methodName][stack];
+
+        var aspectPosition = this.findInStack(stack, aspectName);
+      
+        if (aspectPosition !== undefined){
+        	stack.splice(aspectPosition, 1);
+    	}
+    }
+
+    Introducer.prototype.findInStack = function(stack, aspectName) {
+    	//TODO create hash with positions
+        for(var aspectNum in stack) {
+            if (stack[aspectNum]['name'] === aspectName){
+            	return aspectNum;
+            }
+        }
+        return undefined;
+    }
+
 
     Introducer.prototype.callStack = function(methodName, stackName, args) {
         var aspect;
@@ -57,36 +81,34 @@ var Jaspecto = function () {
         }
     }
 
-    Introducer.prototype.before = function (methodName) {
-        if (!this.wasWrapped(methodName)) {
-            this.wrapMethod(methodName);
-        }
+    Introducer.prototype.getAspectName = function (aspectCallback) {
+		return /function ([^(]*)/.exec(aspectCallback+"" )[1];
+    }
 
-        var that = this;
-        return {
-            'advice':function (aspectName, aspectCallback) {
-                that.addToStack(methodName,'before',aspectName,aspectCallback);
-                return that;
-            }
-        };
+    Introducer.prototype.before = function (methodName) {
+        return this.getPointcutIntroducer(methodName, 'after')
     };
 
     Introducer.prototype.after = function (methodName) {
+        return this.getPointcutIntroducer(methodName, 'after');
+    };
 
+    Introducer.prototype.getPointcutIntroducer = function(methodName, stackName){
         if (!this.wasWrapped(methodName)) {
             this.wrapMethod(methodName);
         }
-
-        var that = this;
-        return {
-            'advice':function (aspectName, aspectCallback) {
-                that.addToStack(methodName,'after', aspectName, aspectCallback)
-                return that;
+    	var introducer = this;
+    	return {
+            'add':function (aspectCallback) {
+            	var aspectName = introducer.getAspectName(aspectCallback);
+                introducer.addToStack(methodName, stackName, aspectName, aspectCallback)
+                return introducer;
+            },
+            'remove':function(aspectName){
+            	introducer.removeFromStack(methodName, stackName, aspectName);
             }
         };
-    };
-
-
+    }
 
     Introducer.prototype.wrapMethod = function (methodName) {
         if (typeof this._pointcut[methodName] === 'undefined') {
@@ -101,8 +123,8 @@ var Jaspecto = function () {
         }
     }
 
-    jas.wrap = wrap;
-    return jas;
+    Jas.wrap = Wrap;
+    return Jas;
 
 
 

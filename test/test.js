@@ -16,22 +16,20 @@
 
     test( "Test wrap object",
         function() {
-
             var a =new A;
-
             a.setA(32);
 
             var beforeWasCalled = false;
             var afterWasCalled = false;
             
-            Jaspecto(a).before('setA').advice('beforeAdvice', 
-                function(val){
+            Jaspecto(a).before('setA').add( 
+                function beforeAdvice(val){
                     equal(3,val,'before advice called with properly value');
                     beforeWasCalled = true;
                 }
             );
 
-            Jaspecto(a).after('setA').advice('afterAdvice', function(val){
+            Jaspecto(a).after('setA').add(function afterAdvice (val){
                 equal(3,val,'after advice called with properly value')
                 afterWasCalled = true;
             });
@@ -53,21 +51,21 @@
         var advice2compl = false;
         var advice3compl = false;
         var advice4compl = false;
-        
-        Jaspecto(a).before('setB').advice('beforeBFirst', 
-            function(){
+
+        Jaspecto(a).before('setB').add( 
+            function beforeBFirst (){
                 advice1compl = true;
             }
-        ).before('setB').advice('beforeBSecond', 
-            function(){
+        ).before('setB').add( 
+            function beforeBSecond (){
                 advice2compl = true;
             }
-        ).after('setA').advice('afterAFirst', 
-            function(){
+        ).after('setA').add( 
+            function afterAFirst (){
                 advice3compl = true;
             }
-        ).after('setA').advice('afterASecond', 
-            function(){
+        ).after('setA').add( 
+            function afterASecond(){
                 advice4compl = true;
             }
         );
@@ -79,6 +77,27 @@
         ok(advice2compl, 'Advice 2 is ok');
         ok(advice3compl, 'Advice 3 is ok');
         ok(advice4compl, 'Advice 4 is ok');
+
+    });
+
+    test("remove advice", function(){
+        var a = new A();
+
+        var advice1compl = false;
+        Jaspecto(a).before('setA').add(function testAdvice(){
+            advice1compl = true;
+        });
+
+        a.setA(3);
+        ok(advice1compl, 'Advice is ok');
+
+        advice1compl = false;
+        Jaspecto(a).before('setA').remove('testAdvice');
+        a.setA(4);
+
+        ok(!advice1compl, 'Advice is ok');
+
+
 
     });
 })();
